@@ -21,6 +21,23 @@ EXEMPT_BASENAMES = {
 }
 
 
+def is_test_path(file_path):
+    """Standard pytest convention: any path component named 'tests',
+    or a filename matching test_*.py / *_test.py."""
+    if not file_path:
+        return False
+    normalized = file_path.replace(os.sep, "/")
+    dir_parts = normalized.split("/")[:-1]
+    if "tests" in dir_parts:
+        return True
+    basename = os.path.basename(file_path)
+    if basename.startswith("test_") and basename.endswith(".py"):
+        return True
+    if basename.endswith("_test.py"):
+        return True
+    return False
+
+
 def deny(reason):
     print(json.dumps({
         "hookSpecificOutput": {
@@ -61,6 +78,9 @@ def main():
         basename = os.path.basename(file_path)
 
         if basename in EXEMPT_BASENAMES:
+            return
+
+        if is_test_path(file_path):
             return
 
         try:
