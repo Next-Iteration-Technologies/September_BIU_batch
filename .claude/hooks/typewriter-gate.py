@@ -12,6 +12,13 @@ LAST_PROMPT_FILE = os.path.join(CLAUDE_DIR, "typewriter-last-prompt.txt")
 
 BLOCKED_TOOLS = {"Agent", "TodoWrite"}
 FILE_TOOLS = {"Edit", "Write", "NotebookEdit"}
+EXEMPT_BASENAMES = {
+    "typewriter-mode",
+    "typewriter-last-prompt.txt",
+    "typewriter-gate.py",
+    "typewriter-reminder.py",
+    "typewriter.md",
+}
 
 
 def deny(reason):
@@ -53,13 +60,22 @@ def main():
         file_path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
         basename = os.path.basename(file_path)
 
+        if basename in EXEMPT_BASENAMES:
+            return
+
         try:
             with open(LAST_PROMPT_FILE) as f:
                 last_prompt = f.read()
         except FileNotFoundError:
             last_prompt = ""
 
-        if file_path and (file_path in last_prompt or (basename and basename in last_prompt)):
+        normalized_prompt = last_prompt.replace("-", " ").replace("_", " ")
+        normalized_basename = basename.replace("-", " ").replace("_", " ")
+        if file_path and (
+            file_path in last_prompt
+            or (basename and basename in last_prompt)
+            or (normalized_basename and normalized_basename in normalized_prompt)
+        ):
             return
 
         deny(
